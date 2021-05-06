@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="ScoreMapper">
+	<select id="selectLecForScore" resultType="scorevo">
+		select lec_id, lec_name from lecture where lec_prof=#{user_id} and lec_sem=#{lec_sem}
+	</select>
+
+	<select id ="selectScoreCount" resultType="integer">
+		select count(*)
+		from register_l
+		where reg_lec = #{lec_id}
+	</select>
+	
+	<select id="selectScore" resultType="scorevo">
+		select * 
+		from (select rownum rn, a.*
+				from (select u.user_name, u.user_id, u.user_major
+            			from userinfo u, register_l r
+            			where r.reg_lec = #{lec_id} 
+                        and u.user_id = r.reg_stu
+            		) a
+        	)
+		where rn between #{start} and #{end}
+		
+		
+	</select>
+	
+
+	<insert id="insertScore">
+		insert into result(res_reg, mid_exam, final_exam, assignment, attendence)
+		values(
+				(select reg_id 
+				 from register_l 
+				 where reg_lec = #{lec_id}
+				 and reg_stu = #{user_id} 
+				),
+				#{mid_exam}, 
+				#{final_exam}, 
+				#{assignment}, 
+				#{attendence} 
+			)
+	</insert>
+
+	<select id="selectScoreForUpdate" resultType="scoreinsertvo">
+		select * 
+		from result r
+		where r.res_reg = (select reg_id 
+						   from register_l
+						   where reg_lec=#{lec_id}
+							and reg_stu=#{user_id})
+	</select>
+
+	<update id="updateScore">
+		update result
+		set mid_exam = #{mid_exam}, final_exam=#{final_exam}, assignment=#{assignment}, attendence=#{attendence}
+		where res_reg=#{res_reg}
+	</update>
+
+	<select id="selectScored" resultType="scoredvo">
+		select r.*, lec_name, lec_sem, lec_maj
+		from result r, lecture, register_l
+		where reg_stu = #{user_id} 
+		and reg_id = res_reg 
+		and reg_lec = lec_id
+	</select>
+	
+	<select id="selectComplete" resultType="integer">
+		select reg_stu
+		from register_l, result
+		where res_reg = reg_id
+		and reg_lec = #{lec_id}
+	</select>
+</mapper>
+
+
