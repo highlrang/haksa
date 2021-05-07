@@ -9,35 +9,33 @@
 @RequestMapping(value="/insert")
 public String goRegister(HttpServletRequest request, RedirectAttributes redirect) {
     String maj_name = request.getParameter("maj_name");
-		String lec_name = request.getParameter("lec_name");
-		String lec_sem = majorService.selectLecSem();                                         // 서비스에서 현재 학기 추출
-		int user_id = sessionUtils.getSessionUser();                                          // session에서 사용자 정보 호출하는 메서드
-		Integer reg_count = 0;
+    String lec_name = request.getParameter("lec_name");
+    String lec_sem = majorService.selectLecSem();                                // 서비스에서 현재 학기 추출
+    int user_id = sessionUtils.getSessionUser();                                 // session에서 사용자 정보 호출하는 메서드
+    Integer reg_count = 0;
 		
-		LectureVO lectureVO = new LectureVO(lec_name, lec_sem);
-		Integer maxCount = registerService.selectMaxCount(lectureVO);                         // 서비스에서 강의 수강 신청한 인원 수 추출
-		Integer lecLimit = majorService.selectLecLimit(lectureVO);			      // 서비스에서 강의의 수강 제한 인원 수 추출
+    LectureVO lectureVO = new LectureVO(lec_name, lec_sem);
+    Integer maxCount = registerService.selectMaxCount(lectureVO);                // 서비스에서 강의 수강 신청한 인원 수 추출
+    Integer lecLimit = majorService.selectLecLimit(lectureVO);			 // 서비스에서 강의의 수강 제한 인원 수 추출
 												
-		try {										      // 강의 등록 인원 수(reg_count) 설정
-			if(maxCount >= lecLimit) {
-				reg_count = registerService.selectMinCount(lectureVO) - 1;            // 수강 제한 인원 초과했을 시 대기 처리를 위해 대기 번호 추출
-				
-			}else {
-				
-				reg_count = maxCount + 1;
-			}
-		
-		}catch(NullPointerException e) {
-			reg_count = 1;
-		}	
-			
-		RegisterVO registerVO = new RegisterVO(user_id, lec_name, lec_sem, reg_count);
-		registerService.insertRegister(registerVO);                                           // 서비스를 통해 수강 등록 진행 
-		
-		redirect.addAttribute("maj_Name", maj_name);
-		return "redirect:/register/lectureForRegister";
-		
+    try {									 // 강의 등록 인원 수(reg_count) 설정
+        if(maxCount >= lecLimit) {
+	    reg_count = registerService.selectMinCount(lectureVO) - 1;           // 수강 제한 인원 초과했을 시 대기 처리를 위해 대기 번호 추출		
+	}else {	
+	    reg_count = maxCount + 1;
 	}
+		
+    }catch(NullPointerException e) {
+	reg_count = 1;
+    }	
+			
+    RegisterVO registerVO = new RegisterVO(user_id, lec_name, lec_sem, reg_count);
+    registerService.insertRegister(registerVO);                                  // 서비스를 통해 수강 등록 진행 
+		
+    redirect.addAttribute("maj_Name", maj_name);
+    return "redirect:/register/lectureForRegister";
+		
+}
 ```
 
 ------------------------------------------------------
@@ -99,18 +97,18 @@ public class RegisterVO {
 @Repository
 public class MajorDAO{
 	@Inject
-	private SqlSession sqlSession;    # mybatis 연결
+	private SqlSession sqlSession;    // mybatis 연결
   ...
-	private static final String InsertRegister = "MajorMapper.insertRegister";      # mapper 지정
+	private static final String InsertRegister = "MajorMapper.insertRegister";      // mapper 지정
 	private static final String SelectRegister = "MajorMapper.selectRegistered";
 	
   ...
 	public void insertRegister(RegisterVO vo) {
-		sqlSession.insert(InsertRegister, vo);          			# insert 메서드(DB 기능) 실행
+		sqlSession.insert(InsertRegister, vo);          			// insert 메서드(DB 기능) 실행
 	}
   
 	public List<RegisteredVO> selectRegistered(int stu_number) {
-		return sqlSession.selectList(SelectRegister, stu_number);        	# select 메서드(DB 기능) 실행
+		return sqlSession.selectList(SelectRegister, stu_number);        	// delect 메서드(DB 기능) 실행
 	}
 }
 ```
@@ -167,10 +165,10 @@ public class MajorDAO{
 	<div style="font-weight: bold;">${lec_sem} - ${maj_name} 강의</div>
 	<br><br>
 	
-	<c:forEach var="lecture" items="${lectureList}">                                                      // List<LectureVO> 로 넘겨받은 강의 객체들 for문으로 순회
+	<c:forEach var="lecture" items="${lectureList}">                                           // List<LectureVO> 로 넘겨받은 강의 객체들 for문으로 순회
 	    <form method="post">
                 <span style="margin: 3%;"> 
-		    <span style="font-weight: bold;">${lecture.getLec_name()}</span>                              // 각 강의 세부 정보
+		    <span style="font-weight: bold;">${lecture.getLec_name()}</span>               // 각 강의 세부 정보
 		    <span>${lecture.getLec_time() }</span>	
 	            <span>${lecture.getLec_prof() }</span>
 		
@@ -183,16 +181,16 @@ public class MajorDAO{
 	        <c:when test="${already.containsKey(lecture.getLec_name()) }">
 		    <c:choose>
 		    <c:when test="${already.get(lecture.getLec_name()) > 0 }">
-			<span><input type="submit" value="수강 신청 취소" formaction="registerDelete"/></span>                    // 이미 수강신청 되어있으면 수강 취소 버튼
+			<span><input type="submit" value="수강 신청 취소" formaction="registerDelete"/></span>       // 이미 수강신청 되어있으면 수강 취소 버튼
 		    </c:when>
 		    <c:otherwise>
-         	        <span><input type="submit" value="수강 대기 취소" formaction="registerDelete" /></span>                   // 수강 대기 처리 되어있으면 수강 대기 취소 버튼
+         	        <span><input type="submit" value="수강 대기 취소" formaction="registerDelete" /></span>      // 수강 대기 처리 되어있으면 수강 대기 취소 버튼
 	       	    </c:otherwise>
 		    </c:choose>	
 		</c:when>
 		
 		<c:otherwise>
-		    <input type="submit" value="수강신청" formaction="insert"/>                                                   // 위에 해당되지 않을 경우 수강신청 버튼
+		    <input type="submit" value="수강신청" formaction="insert"/>                             // 수강 제한 인원이 초과하지 않았을 경우 수강신청 버튼
 		</c:otherwise>
 		</c:choose>	
 	    </form>
