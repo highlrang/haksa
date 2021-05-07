@@ -10,17 +10,17 @@
 public String goRegister(HttpServletRequest request, RedirectAttributes redirect) {
     String maj_name = request.getParameter("maj_name");
 		String lec_name = request.getParameter("lec_name");
-		String lec_sem = majorService.selectLecSem();                                               
+		String lec_sem = majorService.selectLecSem();                                         // 서비스에서 현재 학기 추출
 		int user_id = sessionUtils.getSessionUser();                                          // session에서 사용자 정보 호출하는 메서드
 		Integer reg_count = 0;
 		
 		LectureVO lectureVO = new LectureVO(lec_name, lec_sem);
-		Integer maxCount = registerService.selectMaxCount(lectureVO);
-		Integer lecLimit = majorService.selectLecLimit(lectureVO);
-		
-		try {
+		Integer maxCount = registerService.selectMaxCount(lectureVO);                         // 서비스에서 강의 수강 신청한 인원 수 추출
+		Integer lecLimit = majorService.selectLecLimit(lectureVO);			      // 서비스에서 강의의 수강 제한 인원 수 추출
+												
+		try {										      // 강의 등록 인원 수(reg_count) 설정
 			if(maxCount >= lecLimit) {
-				reg_count = registerService.selectMinCount(lectureVO) - 1;
+				reg_count = registerService.selectMinCount(lectureVO) - 1;            // 수강 제한 인원 초과했을 시 대기 처리를 위해 대기 번호 추출
 				
 			}else {
 				
@@ -32,7 +32,7 @@ public String goRegister(HttpServletRequest request, RedirectAttributes redirect
 		}	
 			
 		RegisterVO registerVO = new RegisterVO(user_id, lec_name, lec_sem, reg_count);
-		registerService.insertRegister(registerVO);
+		registerService.insertRegister(registerVO);                                           // 서비스를 통해 수강 등록 진행 
 		
 		redirect.addAttribute("maj_Name", maj_name);
 		return "redirect:/register/lectureForRegister";
@@ -49,17 +49,17 @@ public String goRegister(HttpServletRequest request, RedirectAttributes redirect
 public class RegisterService{
 	
   @Autowired
-	private MajorDAO majorDAO;
+  private MajorDAO majorDAO;
   
   ...
   
   public void insertRegister(RegisterVO registerVO) {
-		majorDAO.insertRegister(registerVO);
-	}
+       majorDAO.insertRegister(registerVO);
+  }
 	
-	public void deleteRegister(RegisterVO registerVO) {
-		majorDAO.deleteRegister(registerVO);
-	}
+  public void deleteRegister(RegisterVO registerVO) {
+       majorDAO.deleteRegister(registerVO);
+  }
 }
 
 ```
@@ -80,11 +80,11 @@ public class RegisterVO {
 	
 	public RegisterVO() {};
 	
-  public RegisterVO(Integer user_id, String lec_name, String lec_sem, Integer reg_count) {
-		this.user_id = user_id;
-		this.lec_name = lec_name;
-		this.lec_sem = lec_sem;
-		this.reg_count = reg_count;
+        public RegisterVO(Integer user_id, String lec_name, String lec_sem, Integer reg_count) {
+	    this.user_id = user_id;
+	    this.lec_name = lec_name;
+	    this.lec_sem = lec_sem;
+	    this.reg_count = reg_count;
 	}
   
 	...
@@ -125,20 +125,20 @@ public class MajorDAO{
 <insert id="insertRegister">
 	  insert into register_l(reg_id, reg_stu, reg_lec, reg_sem, reg_count) 
 	  values( 
-	  (select MAX(reg_id) + 1 from register_l),
-	  #{user_id}, 
-	  (select lec_id from lecture where lec_name=#{lec_name} and lec_sem=#{lec_sem}), 
-	  #{lec_sem},
-	  #{reg_count}
+	      (select MAX(reg_id) + 1 from register_l),
+	      #{user_id}, 
+	      (select lec_id from lecture where lec_name=#{lec_name} and lec_sem=#{lec_sem}), 
+	      #{lec_sem},
+	      #{reg_count}
 	  )
 </insert>
   
 <select id="selectRegistered" resultType="registeredvo">
     select lec_name, lec_sem, lec_maj, reg_count
     from lecture, register_l
-	  where reg_stu = #{user_id} 
-	  and lec_id = reg_lec
-	  and lec_sem=#{lec_sem}
+    where reg_stu = #{user_id} 
+    and lec_id = reg_lec
+    and lec_sem=#{lec_sem}
 </select>
 ```
 
@@ -163,41 +163,42 @@ public class MajorDAO{
 
   <jsp:include page="base.jsp"></jsp:include>
 	
-	<div style="margin-left: 5%;">
+  <div style="margin-left: 5%;">
 	<div style="font-weight: bold;">${lec_sem} - ${maj_name} 강의</div>
 	<br><br>
 	
 	<c:forEach var="lecture" items="${lectureList}">                                                      // List<LectureVO> 로 넘겨받은 강의 객체들 for문으로 순회
 	    <form method="post">
-		    <span style="margin: 3%;"> 
-		    	<span style="font-weight: bold;">${lecture.getLec_name()}</span>                              // 각 강의 세부 정보
-		    	<span>${lecture.getLec_time() }</span>
-		    	<span>${lecture.getLec_prof() }</span>
-		    	<input type="hidden" value="${lecture.getLec_name()}" name="lec_name"/>
-		    	<input type="hidden" value="${lecture.getLec_id()}" name="lec_id"/>
-		    	<input type="hidden" value="${maj_name}" name="maj_name"/>
-		    </span>
+                <span style="margin: 3%;"> 
+		    <span style="font-weight: bold;">${lecture.getLec_name()}</span>                              // 각 강의 세부 정보
+		    <span>${lecture.getLec_time() }</span>	
+	            <span>${lecture.getLec_prof() }</span>
+		
+		    <input type="hidden" value="${lecture.getLec_name()}" name="lec_name"/>
+		    <input type="hidden" value="${lecture.getLec_id()}" name="lec_id"/>
+		    <input type="hidden" value="${maj_name}" name="maj_name"/>    
+		</span>
 		    
+		<c:choose>
+	        <c:when test="${already.containsKey(lecture.getLec_name()) }">
 		    <c:choose>
-			    <c:when test="${already.containsKey(lecture.getLec_name()) }">
-			    	<c:choose>
-				    	<c:when test="${already.get(lecture.getLec_name()) > 0 }">
-				    		<span><input type="submit" value="수강 신청 취소" formaction="registerDelete"/></span>                    // 이미 수강신청 되어있으면 수강 취소 버튼
-				    	</c:when>
-				    	<c:otherwise>
-				    		<span><input type="submit" value="수강 대기 취소" formaction="registerDelete" /></span>                   // 수강 대기 처리 되어있으면 수강 대기 취소 버튼
-				    	</c:otherwise>
-				    </c:choose>	
-		    	</c:when>
-		    	<c:otherwise>
-		    		<input type="submit" value="수강신청" formaction="insert"/>                                                   // 위에 해당되지 않을 경우 수강신청 버튼
-				  </c:otherwise>
-			</c:choose>	
-
+		    <c:when test="${already.get(lecture.getLec_name()) > 0 }">
+			<span><input type="submit" value="수강 신청 취소" formaction="registerDelete"/></span>                    // 이미 수강신청 되어있으면 수강 취소 버튼
+		    </c:when>
+		    <c:otherwise>
+         	        <span><input type="submit" value="수강 대기 취소" formaction="registerDelete" /></span>                   // 수강 대기 처리 되어있으면 수강 대기 취소 버튼
+	       	    </c:otherwise>
+		    </c:choose>	
+		</c:when>
+		
+		<c:otherwise>
+		    <input type="submit" value="수강신청" formaction="insert"/>                                                   // 위에 해당되지 않을 경우 수강신청 버튼
+		</c:otherwise>
+		</c:choose>	
 	    </form>
 	    <br>
 	</c:forEach>
-	</div>
+  </div>
 </body>
 </html>
 ```
